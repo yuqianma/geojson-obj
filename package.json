@@ -1,0 +1,32 @@
+{
+  "name": "geojson-obj",
+  "version": "0.1.0",
+  "description": "convert geojson to 3d model and obj file",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/yuqianma/geojson-obj.git"
+  },
+  "keywords": [
+    "geojson",
+    "three",
+    "obj"
+  ],
+  "author": "Yuqian Ma",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yuqianma/geojson-obj/issues"
+  },
+  "homepage": "https://github.com/yuqianma/geojson-obj#readme",
+  "dependencies": {
+    "@turf/turf": "^5.1.6",
+    "d3-geo": "^1.11.9",
+    "lodash": "^4.17.15",
+    "polyline-normals": "^2.0.2",
+    "three": "^0.115.0"
+  },
+  "devDependencies": {}
+}
