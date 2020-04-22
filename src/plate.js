@@ -1,6 +1,3 @@
-import { Line2 } from '../node_modules/three/examples/jsm/lines/Line2.js';
-import { LineMaterial } from '../node_modules/three/examples/jsm/lines/LineMaterial.js';
-import { LineGeometry } from '../node_modules/three/examples/jsm/lines/LineGeometry.js';
 
 const EarthRadius = 6378137;
 
@@ -186,7 +183,7 @@ export class Plate {
     // group.add(extrude);
     // group.add(outline);
 
-    // this.object = extrude;
+    // this.object = this._createExtrude({ shapes });
     this.object = this.createOutline(geojson);
   }
 
@@ -230,18 +227,26 @@ export class Plate {
     
     const mat = new THREE.MeshBasicMaterial( { color: outlineColor } );
 
-    supportedFeatureEach(geojson, (feature) => {
+    turf.featureEach(geojson, (feature) => {
       let coordinates = feature.geometry.coordinates;
 
-      if (turf.getType(feature) === 'Polygon') {
+      const type = turf.getType(feature);
+
+      if (type !== 'MultiLineString') {
+        return;
+      }
+
+      if (type === 'Polygon') {
         coordinates = [coordinates]; // make it as MultiPolygon
       }
 
       coordinates.map((polygon) => {
-        const outerRing = polygon[0];
+        const outerRing = type === 'MultiLineString' ? polygon : polygon[0];
         const linePoints = outerRing.map(this.project);
 
-        linePoints.push(linePoints[0].slice());
+        if (type === 'Polygon' || type === 'MultiPolygon') {
+          linePoints.push(linePoints[0].slice());
+        }
 
         const len = linePoints.length * 2;
         const points = new Array(len);
@@ -317,40 +322,6 @@ export class Plate {
       outlineGroup.add(line);
 
       geom.dispose();
-    });
-
-    return outlineGroup;
-  }
-
-  _createOutline2({ shapes }) {
-    const { outlineColor } = this.props;
-
-    const outlineGroup = new THREE.Group();
-
-    shapes.map(shape => {
-      shape.forEach(s => {
-        const position = [];
-
-        s.curves.forEach(curve => {
-          position.push(curve.v1.x, curve.v1.y, 0);
-        });
-        const { x, y } = s.curves[0].v1;
-        position.push(x, y, 0);
-
-        const geometry = new LineGeometry();
-        geometry.setPositions( position );
-
-        const line = new Line2(
-          geometry,
-          new LineMaterial({
-            color: outlineColor,
-            linewidth: 0.01,
-            // vertexColors: true,
-            dashed: false,
-          })
-        );
-        outlineGroup.add(line);
-      });
     });
 
     return outlineGroup;

@@ -104,9 +104,9 @@ async function generate(filepath) {
 
   // example();
 
-  // fitView();
+  fitView();
 
-  focusChina();
+  // focusChina();
 
   window.downloadObj = function () {
     const result = parseToObjString(plate.object);
@@ -140,9 +140,8 @@ async function generate(filepath) {
 };
 
 window.generate = generate;
-// generate('./geojson/china-area.json');
-// generate('./geojson/world-120.old.json');
-generate('./geojson/world-area.json');
+generate('./geojson/china-area.json');
+// generate('./geojson/world-360.json');
 
 function animate() {
 
