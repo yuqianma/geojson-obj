@@ -1,5 +1,5 @@
 
-const EarthRadius = 6378137;
+
 
 const SUPPORTED_FEATURE_TYPES = {
   MultiPolygon: true,
@@ -12,44 +12,6 @@ export const supportedFeatureEach = (geojson, callback) =>
   turf.featureEach(geojson, (feature, index) => {
     supportedFeature(feature) && callback(feature, index)
   });
-
-// return scaling factor that fit bounds within width/height
-export function getFittedScale(bounds, width, height) {
-  const topLeft = bounds[0];
-  const bottomRight = bounds[1];
-
-  const w = bottomRight[0] - topLeft[0];
-  const h = bottomRight[1] - topLeft[1];
-
-  const hscale = width / w;
-  const vscale = height / h;
-
-  // pick the smallest scaling factor
-  const scale = (hscale < vscale) ? hscale : vscale;
-
-  return scale;
-}
-
-// 我们的geojson自定义了一个可视范围用于初始范围计算（例如海南）
-export const bbox = (geojson) => {
-  const result = [Infinity, Infinity, -Infinity, -Infinity];
-
-  supportedFeatureEach(geojson, (feature) => {
-
-    // const coord =
-    //         feature.properties && feature.properties.bbox ||
-    //         turf.bbox(feature);
-    const coord = turf.bbox(feature);
-
-    if (result[0] > coord[0]) { result[0] = coord[0]; }
-    if (result[1] > coord[1]) { result[1] = coord[1]; }
-    if (result[2] < coord[2]) { result[2] = coord[2]; }
-    if (result[3] < coord[3]) { result[3] = coord[3]; }
-
-  });
-
-  return result;
-};
 
 export const get2DProjection = (bbox, unit = 1000) => {
   const [ax, ay, bx, by] = bbox;
@@ -162,7 +124,7 @@ export class Plate {
   install() {
     const geojson = this.geojson;
 
-    this._bbox = bbox(geojson);
+    this._bbox = turf.bbox(geojson);
 
     // get projection range
     // x ∈ [0, unit]
