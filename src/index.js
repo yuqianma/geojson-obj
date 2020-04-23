@@ -50,6 +50,34 @@ camera.position.set( -4e5, 6e6, -2e6 );
 window._camera = camera;
 
 const control = new OrbitControls( camera, renderer.domElement );
+window.control = control;
+
+(function(control) {
+  const values = location.hash.substr(1).split('/').map(v => +v);
+  control.target.set(values[0], values[1], values[2]);
+  control.object.position.set(values[3], values[4], values[5]);
+  control.object.zoom = values[6];
+
+  control.object.updateProjectionMatrix();
+  control.update();
+
+})(control);
+
+control.addEventListener('end', e => {
+  const control = e.target;
+  const target = control.target;
+  const { position, zoom } = control.object;
+
+  location.hash = [
+    target.x,
+    target.y,
+    target.z,
+    position.x,
+    position.y,
+    position.z,
+    zoom
+  ].join('/');
+});
 
 const scene = new THREE.Scene();
 const light = new THREE.DirectionalLight( 0xffffff );
@@ -59,61 +87,37 @@ scene.add( new THREE.AxesHelper( 20000000 ) );
 
 scene.add( new THREE.GridHelper( 2000, 2 ) );
 
-function fitView(object) {
-  const boundingBox = new THREE.Box3();
-  boundingBox.setFromObject( object );
-  const size = boundingBox.getSize(new THREE.Vector3());
-  camera.position.set(-size.x / 10, size.x, -size.x / 10)
-}
-
-function focusChina() {
-  camera.position.set(
-    -12838345.970047053,
-    1935005.7193151636,
-    746082.0641847774
-  );
-
-  camera.rotation.set(
-    -2.509895558846024,
-    -0.2946291195079585,
-    -2.9322266947597226
-  );
-}
-
-async function generate(filepath) {
+async function generate(filepath, opt) {
   const geojson = await fetch(filepath).then(r => r.json());
 
-  const model = geoModel(geojson, {
-    geometryTypes: ['Polygon', 'MultiPolygon']
-  });
+  const model = geoModel(geojson, opt);
   const object = model.create();
 
-  object.rotateX(-Math.PI / 2);
+  object.rotateX(Math.PI / 2);
   object.rotateY(Math.PI);
   scene.add(object);
 
   scene.add( new THREE.BoxHelper( object, 0xffff00 ) );
 
-  // example();
-
-  // fitView();
-
-  focusChina();
-
   window.downloadObj = () => downloadObj(object);
 
-  var geometry = new THREE.CircleGeometry( 500000, 32 );
+  var geometry = new THREE.SphereBufferGeometry( 500000, 32, 32 );
   var material = new THREE.MeshBasicMaterial( { color: 0xee5555 } );
   var circle = new THREE.Mesh( geometry, material );
   const [x, y] = model.project([180, 0]);
   geometry.translate(x, y, 1);
-  circle.rotateX(Math.PI / 2);
   circle.rotateY(Math.PI);
   scene.add(circle);
 };
 
-generate('./geojson/china-area.json');
-// generate('./geojson/world-360.json');
+// generate('./geojson/china-area.json', {
+//   featureTypes: ['Polygon', 'MultiPolygon'],
+//   outputType: 'planeOutline'
+// });
+generate('./geojson/world-360.json', {
+  featureTypes: ['Polygon', 'MultiPolygon'],
+  outputType: 'planeOutline'
+});
 
 function animate() {
 

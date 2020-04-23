@@ -1,34 +1,58 @@
 import { get2DProjection } from './projection.js';
 
-const GeometryTypes = {
+const FeatureTypes = {
   Polygon: 'Polygon',
   MultiPolygon: 'MultiPolygon',
   LineString: 'LineString',
   MultiLineString: 'MultiLineString'
 };
 
+const Constants = {
+  Outline: 'outline',
+  Surface: 'surface',
+
+  Extrude: 'extrude',
+  Plane: 'plane',
+};
+
 export function geoModel(geojson, opt = {}) {
   const {
-    geometryTypes,
-    output,
+    featureTypes,
+    outputType = 'extrudesurface',
     color = 0x00bbdd,
+    sideColor = 0xffffff,
     depth = 1e5,
     lineWidth = 2e4,
   } = opt;
 
-  const project = get2DProjection(geojson);
+  const _project = get2DProjection(geojson);
+  const project = point => {
+    const projected = _project(point);
+    // flip y for 3d;
+    projected[1] = -projected[1];
+    if (point[0] > _project.boundedLongitude) {
+      // d3 will wrap out-of-range longitude.
+      // Offset it by adding width.
+      projected[0] += _project.boundedWidth;
+    }
+    return projected;
+  };
 
-  const supportedGeometryTypeMap = geometryTypes
-    ? geometryTypes.reduce((obj, name) => (obj[name] = 1, obj), {})
-    : GeometryTypes;
+  const supportedFeatureTypes = featureTypes
+    ? featureTypes.reduce((obj, name) => (obj[name] = 1, obj), {})
+    : FeatureTypes;
+
+  const ot = outputType.toLowerCase();
+  const shapeType = ot.includes(Constants.Outline) ? Constants.Outline : Constants.Surface;
+  const geomType = ot.includes(Constants.Plane) ? Constants.Plane : Constants.Extrude;
   
   const mat = new THREE.MeshBasicMaterial({ color });
-  const mat2 = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const sideMat = new THREE.MeshBasicMaterial({ color: sideColor });
 
   const ringToShape = ring =>
     new THREE.Shape(ring.map(point => new THREE.Vector2(...project(point))));
 
-  const polygonToShape = polygon => polygon.slice(1).reduce((polygonShape, hole) => {
+  const polygonToSurfaceShape = polygon => polygon.slice(1).reduce((polygonShape, hole) => {
     polygonShape.holes.push(ringToShape(hole));
     return polygonShape;
   }, ringToShape(polygon[0]));
@@ -41,8 +65,18 @@ export function geoModel(geojson, opt = {}) {
 
     linePoints.forEach(([x, y], i) => {
       let [dx, dy] = normals[i][0];
-      dx *= lineWidth / 2;
-      dy *= lineWidth / 2;
+      let m = normals[i][1];
+      let hw = lineWidth / 2;
+
+      dx *= hw;
+      dy *= hw;
+
+      // TODO: why Infinity?
+      // if (Number.isFinite(m)) {
+      //   dx *= m;
+      //   dy *= m;
+      // }
+      
       points[i] = new THREE.Vector2( x - dx, y - dy );
       points[len - 1 - i] = new THREE.Vector2( x + dx, y + dy );
     });
@@ -50,18 +84,24 @@ export function geoModel(geojson, opt = {}) {
     return new THREE.Shape(points);
   }
 
+  // outline only, no hole
+  const polygonToOutlineShape = polygon => expandLineToShape(polygon[0]);
+
   const shapeToExtrudeMesh = shape => new THREE.Mesh(
     new THREE.ExtrudeBufferGeometry(shape, {
       depth,
       bevelEnabled: false
     }),
-    [mat, mat2]
+    [mat, sideMat]
   );
 
-  const shapeToMesh = shape => new THREE.Mesh(
+  const shapeToPlaneMesh = shape => new THREE.Mesh(
     new THREE.ShapeBufferGeometry(shape),
     mat
   );
+
+  const polygonToShape = shapeType === Constants.Surface ? polygonToSurfaceShape : polygonToOutlineShape;
+  const shapeToMesh = geomType === Constants.Extrude ? shapeToExtrudeMesh : shapeToPlaneMesh;
 
   const create = () => {
     const group = new THREE.Group();
@@ -70,34 +110,48 @@ export function geoModel(geojson, opt = {}) {
       const type = turf.getType(feature);
       const name = feature.properties.name;
 
-      if (!supportedGeometryTypeMap[type]) {
+      if (!supportedFeatureTypes[type]) {
         return;
       }
 
+      // if (!name) {
+      //   return;
+      // }
+
       let coordinates = feature.geometry.coordinates;
 
-      if (type === GeometryTypes.MultiPolygon || type === GeometryTypes.Polygon) {
+      if (type === FeatureTypes.MultiPolygon || type === FeatureTypes.Polygon) {
+        if (type === FeatureTypes.MultiPolygon) {
+          // Tix abnormal MultiPolygon.
+          // Too many sub rings are not presenting holes.
+          // It's bug in geojson.
+          if (coordinates.length === 1 && coordinates[0].length > 10) {
+            // console.log(name, feature);
+            // re-map rings to normal polygons
+            coordinates = coordinates[0].map(polygon => [polygon]);
+          }
+        }
 
-        if (type === GeometryTypes.Polygon) {
+        if (type === FeatureTypes.Polygon) {
           coordinates = [coordinates];
         }
 
         coordinates.forEach(polygon => {
           const shape = polygonToShape(polygon);
-          const mesh = shapeToExtrudeMesh(shape);
+          const mesh = shapeToMesh(shape);
           mesh.name = name;
 
           group.add(mesh);
         });
-      } else if (type === GeometryTypes.MultiLineString || type === GeometryTypes.LineString) {
+      } else if (type === FeatureTypes.MultiLineString || type === FeatureTypes.LineString) {
 
-        if (type === GeometryTypes.LineString) {
+        if (type === FeatureTypes.LineString) {
           coordinates = [coordinates];
         }
 
         coordinates.forEach(line => {
           const shape = expandLineToShape(line);
-          const mesh = shapeToExtrudeMesh(shape);
+          const mesh = shapeToMesh(shape);
           mesh.name = name;
 
           group.add(mesh);
