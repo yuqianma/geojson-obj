@@ -23,7 +23,14 @@ export function geoModel(geojson, opt = {}) {
     sideColor = 0xffffff,
     depth = 1e5,
     lineWidth = 2e4,
+    minPolygonArea = 0,
+    simplifyOptions,
+    featureFilter,
   } = opt;
+
+  // if (simplifyOptions) {
+  //   geojson = turf.simplify(geojson, simplifyOptions);
+  // }
 
   const _project = get2DProjection(geojson);
   const project = point => {
@@ -107,6 +114,9 @@ export function geoModel(geojson, opt = {}) {
     const group = new THREE.Group();
 
     turf.featureEach(geojson, (feature) => {
+      if (featureFilter && !featureFilter(feature)) {
+        return;
+      } 
       const type = turf.getType(feature);
       const name = feature.properties.name;
 
@@ -114,9 +124,9 @@ export function geoModel(geojson, opt = {}) {
         return;
       }
 
-      // if (!name) {
-      //   return;
-      // }
+      if (name && name !== '中国' && simplifyOptions) {
+        feature = turf.simplify(feature, simplifyOptions);
+      }
 
       let coordinates = feature.geometry.coordinates;
 
@@ -137,6 +147,19 @@ export function geoModel(geojson, opt = {}) {
         }
 
         coordinates.forEach(polygon => {
+          if (minPolygonArea) {
+            let area;
+            try {
+              area = turf.area(turf.polygon(polygon));
+            } catch (e) {
+              // line, maybe
+            }
+
+            if (!area || area < minPolygonArea) {
+              return;
+            }
+          }
+
           const shape = polygonToShape(polygon);
           const mesh = shapeToMesh(shape);
           mesh.name = name;

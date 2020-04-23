@@ -110,14 +110,53 @@ async function generate(filepath, opt) {
   scene.add(circle);
 };
 
+// // china provinces extrude surface
 // generate('./geojson/china-area.json', {
 //   featureTypes: ['Polygon', 'MultiPolygon'],
-//   outputType: 'planeOutline'
+//   outputType: 'extrudeSurface'
 // });
-generate('./geojson/world-360.json', {
-  featureTypes: ['Polygon', 'MultiPolygon'],
-  outputType: 'planeOutline'
-});
+
+// // china ten-dash line extrude surface
+// generate('./geojson/china-area.json', {
+//   featureTypes: ['MultiLineString'],
+//   outputType: 'extrudeSurface'
+// });
+
+// // china provinces boundary plane outline
+// generate('./geojson/china-area.json', {
+//   featureTypes: ['Polygon', 'MultiPolygon'],
+//   outputType: 'planeOutline',
+//   minPolygonArea: 1e10,
+// });
+
+// // china boundary plane outline
+// generate('./geojson/world-360.json', {
+//   featureTypes: ['Polygon', 'MultiPolygon'],
+//   outputType: 'planeOutline',
+//   minPolygonArea: 1e10,
+//   featureFilter: feature => feature.properties.name === '中国'
+// });
+
+// // world extrude surface
+// generate('./geojson/world-360.json', {
+//   featureTypes: ['Polygon', 'MultiPolygon'],
+//   outputType: 'extrudeSurface',
+//   simplifyOptions: {
+//     tolerance: 0.1,
+//     // highQuality: true,
+//   }
+// });
+
+// // world contries boundary plane outline
+// generate('./geojson/world-360.json', {
+//   featureTypes: ['Polygon', 'MultiPolygon'],
+//   outputType: 'planeOutline',
+//   minPolygonArea: 1e10,
+//   simplifyOptions: {
+//     tolerance: 0.1,
+//     // highQuality: true,
+//   }
+// });
 
 function animate() {
 
