@@ -94,7 +94,7 @@ export function geoModel(geojson, opt = {}) {
   // outline only, no hole
   const polygonToOutlineShape = polygon => expandLineToShape(polygon[0]);
 
-  const shapeToExtrudeMesh = shape => new THREE.Mesh(
+  const shapesToExtrudeMesh = shape => new THREE.Mesh(
     new THREE.ExtrudeBufferGeometry(shape, {
       depth,
       bevelEnabled: false
@@ -102,13 +102,13 @@ export function geoModel(geojson, opt = {}) {
     [mat, sideMat]
   );
 
-  const shapeToPlaneMesh = shape => new THREE.Mesh(
+  const shapesToPlaneMesh = shape => new THREE.Mesh(
     new THREE.ShapeBufferGeometry(shape),
     mat
   );
 
   const polygonToShape = shapeType === Constants.Surface ? polygonToSurfaceShape : polygonToOutlineShape;
-  const shapeToMesh = geomType === Constants.Extrude ? shapeToExtrudeMesh : shapeToPlaneMesh;
+  const shapesToMesh = geomType === Constants.Extrude ? shapesToExtrudeMesh : shapesToPlaneMesh;
 
   const create = () => {
     const group = new THREE.Group();
@@ -130,9 +130,11 @@ export function geoModel(geojson, opt = {}) {
 
       let coordinates = feature.geometry.coordinates;
 
+      const shapes = [];
+
       if (type === FeatureTypes.MultiPolygon || type === FeatureTypes.Polygon) {
         if (type === FeatureTypes.MultiPolygon) {
-          // Tix abnormal MultiPolygon.
+          // Fix abnormal MultiPolygon.
           // Too many sub rings are not presenting holes.
           // It's bug in geojson.
           if (coordinates.length === 1 && coordinates[0].length > 10) {
@@ -161,11 +163,9 @@ export function geoModel(geojson, opt = {}) {
           }
 
           const shape = polygonToShape(polygon);
-          const mesh = shapeToMesh(shape);
-          mesh.name = name;
-
-          group.add(mesh);
+          shapes.push(shape);
         });
+
       } else if (type === FeatureTypes.MultiLineString || type === FeatureTypes.LineString) {
 
         if (type === FeatureTypes.LineString) {
@@ -174,11 +174,14 @@ export function geoModel(geojson, opt = {}) {
 
         coordinates.forEach(line => {
           const shape = expandLineToShape(line);
-          const mesh = shapeToMesh(shape);
-          mesh.name = name;
-
-          group.add(mesh);
+          shapes.push(shape);
         });
+      }
+
+      if (shapes.length) {
+        const mesh = shapesToMesh(shapes);
+        mesh.name = name;
+        group.add(mesh);
       }
 
     });

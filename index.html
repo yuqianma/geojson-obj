@@ -7,7 +7,19 @@
   <style>
     html,body {
 			margin: 0;
+      height: 100%;
 		}
+
+    #menu {
+      position: absolute;
+      z-index: 10;
+      left: 0;
+      top: 0;
+      color: #fff;
+    }
+    #menu label {
+      display: block;
+    }
   </style>
   <script src="./node_modules/lodash/lodash.min.js"></script>
   <script src="./node_modules/@turf/turf/turf.min.js"></script>
@@ -15,6 +27,11 @@
   <script src="./polyline-normals/polyline-normals.js"></script>
 </head>
 <body>
+<div id="menu">
+  <div><button id="download">Download</button></div>
+  <form id="models">
+  </form>
+</div>
   
 </body>
 <script type="module">
