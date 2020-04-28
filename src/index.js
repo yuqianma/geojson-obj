@@ -199,12 +199,43 @@ function displayModelList(modelList) {
   });
 }
 
+const simplifyOptions = {
+  tolerance: 0.1,
+  // highQuality: true,
+};
+
 const ModelList = [
   {
     name: 'china provinces plane surface',
     file: './geojson/china-area.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeSurface'
+    outputType: 'planeSurface',
+    simplifyOptions
+  },
+  {
+    name: 'china provinces plane outline',
+    file: './geojson/china-area.json',
+    featureTypes: ['Polygon', 'MultiPolygon'],
+    outputType: 'planeOutline',
+    minPolygonArea: 0.5e10,
+    simplifyOptions
+  },
+  {
+    name: 'china plane outline',
+    file: './geojson/world-360.json',
+    featureTypes: ['Polygon', 'MultiPolygon'],
+    outputType: 'planeOutline',
+    minPolygonArea: 0.5e10,
+    featureFilter: feature => feature.properties.name === '中国',
+    simplifyOptions
+  },
+  {
+    name: 'china plane extrude surface',
+    file: './geojson/world-360.json',
+    featureTypes: ['Polygon', 'MultiPolygon'],
+    outputType: 'extrudeSurface',
+    minPolygonArea: 0.5e10,
+    featureFilter: feature => feature.properties.name === '中国'
   },
   {
     name: 'china ten-dash line extrude surface',
@@ -219,58 +250,26 @@ const ModelList = [
     outputType: 'planeSurface'
   },
   {
-    name: 'china provinces boundary plane outline',
-    file: './geojson/china-area.json',
-    featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeOutline',
-    minPolygonArea: 1e10
-  },
-  {
-    name: 'china boundary plane outline',
-    file: './geojson/world-360.json',
-    featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeOutline',
-    minPolygonArea: 1e10,
-    featureFilter: feature => feature.properties.name === '中国'
-  },
-  {
-    name: 'china boundary plane surface',
-    file: './geojson/world-360.json',
-    featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeSurface',
-    minPolygonArea: 1e10,
-    featureFilter: feature => feature.properties.name === '中国'
-  },
-  {
     name: 'world extrude surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
     outputType: 'extrudeSurface',
-    simplifyOptions: {
-      tolerance: 0.1,
-      // highQuality: true,
-    }
+    simplifyOptions
   },
   {
     name: 'world plane surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
     outputType: 'planeSurface',
-    simplifyOptions: {
-      tolerance: 0.1,
-      // highQuality: true,
-    }
+    simplifyOptions
   },
   {
-    name: 'world contries boundary plane outline',
+    name: 'world contries plane outline',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
     outputType: 'planeOutline',
     minPolygonArea: 1e10,
-    simplifyOptions: {
-      tolerance: 0.1,
-      // highQuality: true,
-    }
+    simplifyOptions
   }
 ];
 

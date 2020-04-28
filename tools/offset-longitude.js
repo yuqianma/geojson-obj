@@ -29,9 +29,16 @@ function mutatePolygon(polygon) {
 turf.featureEach(originGeojson, (currentFeature, featureIndex) => {
 
   if (currentFeature.properties.name) {
-    console.log(currentFeature.properties.name);
+    const name = currentFeature.properties.name;
+    console.log(name);
     const type = turf.getType(currentFeature);
     if (type === 'MultiPolygon') {
+      if (name === '中国') {
+        currentFeature.geometry.coordinates = 
+        currentFeature.geometry.coordinates.filter(polygon => {
+          return polygon.length !== 10;
+        });
+      }
       currentFeature.geometry.coordinates.forEach(mutatePolygon);
     } else if (type === 'Polygon') {
       mutatePolygon(currentFeature.geometry.coordinates);

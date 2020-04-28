@@ -32,9 +32,9 @@ export function geoModel(geojson, opt = {}) {
   depth *= scale;
   lineWidth *= scale;
 
-  // if (simplifyOptions) {
-  //   geojson = turf.simplify(geojson, simplifyOptions);
-  // }
+  if (simplifyOptions) {
+    geojson = turf.simplify(geojson, simplifyOptions);
+  }
 
   const _project = get2DProjection(geojson, scale);
   const project = point => {
@@ -109,6 +109,7 @@ export function geoModel(geojson, opt = {}) {
   const shapesToPlaneMesh = shape => new THREE.Mesh(
     new THREE.ShapeBufferGeometry(shape),
     mat
+    // new THREE.MeshBasicMaterial({ color: '#' + (0x1000000 + (Math.random() * 0x1000000) | 0).toString(16).substr(1) }) 
   );
 
   const polygonToShape = shapeType === Constants.Surface ? polygonToSurfaceShape : polygonToOutlineShape;
@@ -128,9 +129,13 @@ export function geoModel(geojson, opt = {}) {
         return;
       }
 
-      if (name && name !== '中国' && simplifyOptions) {
-        feature = turf.simplify(feature, simplifyOptions);
-      }
+      // if (name && simplifyOptions) {
+      //   try {
+      //     feature = turf.simplify(feature, simplifyOptions);
+      //   } catch (e) {
+      //     console.error(name, e, feature);
+      //   }
+      // }
 
       let coordinates = feature.geometry.coordinates;
 
@@ -152,7 +157,12 @@ export function geoModel(geojson, opt = {}) {
           coordinates = [coordinates];
         }
 
-        coordinates.forEach(polygon => {
+        coordinates.forEach((polygon, i) => {
+          try {
+            turf.simplify(turf.polygon(polygon), simplifyOptions);
+          } catch (e) {
+            console.log(name, i, e, polygon, feature);
+          }
           if (minPolygonArea) {
             let area;
             try {
