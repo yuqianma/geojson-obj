@@ -18,7 +18,7 @@ function parseToObjString(object) {
   return result;
 }
 
-function download(text, filename = 'geojson.obj') {
+function download(filename = 'geojson.obj', text) {
   const a = document.createElement('a');
   a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
   a.setAttribute('download', filename);
@@ -27,7 +27,7 @@ function download(text, filename = 'geojson.obj') {
   a.remove();
 }
 
-function downloadObj(object, splitBy = 'o') {
+function downloadObj(filename, object, splitBy = 'o') {
   let text = parseToObjString(object);
   if (splitBy === 'g') {
     text = text.split('\n').map(line => {
@@ -37,7 +37,7 @@ function downloadObj(object, splitBy = 'o') {
       return line;
     }).join('\n');
   }
-  download(text);
+  download(filename, text);
 }
 
 const renderer = new THREE.WebGLRenderer();
@@ -61,11 +61,20 @@ scene.add( new THREE.GridHelper( 2000, 2 ) );
 const geoGroup = new THREE.Group();
 scene.add(geoGroup);
 
+let hashData = location.hash ? JSON.parse(decodeURI(location.hash).substr(1)) : null;
+const setHashData = obj => {
+  hashData = { ...hashData, ...obj };
+  location.hash = JSON.stringify(hashData);
+}
+
 (function(control) {
-  const values = location.hash.substr(1).split('/').map(v => +v);
-  control.target.set(values[0], values[1], values[2]);
-  control.object.position.set(values[3], values[4], values[5]);
-  control.object.zoom = values[6];
+  if (!hashData) {
+    return
+  }
+  const { target, position, zoom } = hashData;
+  control.target.set(...target);
+  control.object.position.set(...position);
+  control.object.zoom = zoom;
 
   control.object.updateProjectionMatrix();
   control.update();
@@ -77,15 +86,11 @@ control.addEventListener('end', e => {
   const target = control.target;
   const { position, zoom } = control.object;
 
-  location.hash = [
-    target.x,
-    target.y,
-    target.z,
-    position.x,
-    position.y,
-    position.z,
+  setHashData({
+    target: [target.x, target.y, target.z],
+    position: [position.x, position.y, position.z],
     zoom
-  ].join('/');
+  });
 });
 
 function animate() {
@@ -119,8 +124,10 @@ function disposeObject(object) {
 }
 
 let geoObject;
+let ratio = hashData.ratio || 1e3;
 
 async function generate(filepath, opt) {
+  opt = {...opt, scale: 1 / ratio };
   const geojson = await fetch(filepath).then(r => r.json());
 
   const model = geoModel(geojson, opt);
@@ -136,29 +143,51 @@ async function generate(filepath, opt) {
   geoGroup.add( helper );
 
   // indicate [180, 0]
-  var geometry = new THREE.SphereBufferGeometry( 500000, 32, 32 );
+  const [x, y] = model.project([180, 0]);
+  var geometry = new THREE.SphereBufferGeometry( x / 100, 32, 32 );
   var material = new THREE.MeshBasicMaterial( { color: 0xee5555 } );
   var circle = new THREE.Mesh( geometry, material );
-  const [x, y] = model.project([180, 0]);
   geometry.translate(x, y, 1);
   circle.rotateY(Math.PI);
   geoGroup.add(circle);
 };
 
+function viewModel(id) {
+  if (id > -1) {
+    const modelOpt = ModelList[id];
+    const { file } = modelOpt;
+
+    disposeObject(geoGroup);
+
+    generate(file, modelOpt);
+  }
+}
+
 document.querySelector('#download').addEventListener('click', (e) => {
-  console.log('downloading');
-  downloadObj(geoObject);
+  const { name } = ModelList[hashData.model];
+  const filename = name.toLowerCase().split(' ').join('.') + `1-${ratio/1000}km.obj`;
+  console.log('downloading', filename);
+  downloadObj(filename, geoObject);
+});
+
+document.querySelector('#ratioExp').value = ratio.toExponential().split('1e+')[1];
+
+document.querySelector('#ratioExpBtn').addEventListener('click', (e) => {
+  const exp = document.querySelector('#ratioExp').value;
+  ratio = 10 ** exp;
+  console.log(ratio);
+  setHashData({ ratio });
+  viewModel(hashData.model);
 });
 
 const form = document.querySelector('#models');
 
 form.addEventListener('change', e => {
-  const modelOpt = ModelList[form.elements.model.value];
-  const { file } = modelOpt;
-
-  disposeObject(geoGroup);
-
-  generate(file, modelOpt);
+  const selected = form.elements.model.value;
+  setHashData({
+    model: selected
+  });
+  viewModel(selected);
 });
 
 function displayModelList(modelList) {
@@ -166,22 +195,28 @@ function displayModelList(modelList) {
     const { name } = model;
     const label = form.appendChild(document.createElement('label'));
     label.textContent = name;
-    label.insertAdjacentHTML('afterbegin', `<input type="radio" name="model" value="${i}" />`);
+    label.insertAdjacentHTML('afterbegin', `<input type="radio" name="model" value="${i}" ${hashData.model == i ? 'checked' : ''} />`);
   });
 }
 
 const ModelList = [
   {
-    name: 'china provinces extrude surface',
+    name: 'china provinces plane surface',
     file: './geojson/china-area.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'extrudeSurface'
+    outputType: 'planeSurface'
   },
   {
     name: 'china ten-dash line extrude surface',
     file: './geojson/china-area.json',
     featureTypes: ['MultiLineString'],
     outputType: 'extrudeSurface'
+  },
+  {
+    name: 'china ten-dash line plane surface',
+    file: './geojson/china-area.json',
+    featureTypes: ['MultiLineString'],
+    outputType: 'planeSurface'
   },
   {
     name: 'china provinces boundary plane outline',
@@ -199,10 +234,28 @@ const ModelList = [
     featureFilter: feature => feature.properties.name === '中国'
   },
   {
+    name: 'china boundary plane surface',
+    file: './geojson/world-360.json',
+    featureTypes: ['Polygon', 'MultiPolygon'],
+    outputType: 'planeSurface',
+    minPolygonArea: 1e10,
+    featureFilter: feature => feature.properties.name === '中国'
+  },
+  {
     name: 'world extrude surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
     outputType: 'extrudeSurface',
+    simplifyOptions: {
+      tolerance: 0.1,
+      // highQuality: true,
+    }
+  },
+  {
+    name: 'world plane surface',
+    file: './geojson/world-360.json',
+    featureTypes: ['Polygon', 'MultiPolygon'],
+    outputType: 'planeSurface',
     simplifyOptions: {
       tolerance: 0.1,
       // highQuality: true,
@@ -222,3 +275,5 @@ const ModelList = [
 ];
 
 displayModelList(ModelList);
+
+hashData && viewModel(hashData.model);

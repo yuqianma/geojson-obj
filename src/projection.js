@@ -1,6 +1,6 @@
 const EarthRadius = 6378137;
 
-export const get2DProjection = (geojson) => {
+export const get2DProjection = (geojson, scale) => {
   const bbox = turf.bbox(geojson);
   const [ax, ay, bx, by] = bbox;
 
@@ -26,7 +26,7 @@ export const get2DProjection = (geojson) => {
   const unitProjection = d3.geoMercator()
                            .center(center)
                            .rotate(rotation)
-                           .scale(EarthRadius)
+                           .scale(EarthRadius * scale)
                            .translate([0, 0]);
 
   const lonLatOrigin = unitProjection([0, 0]);

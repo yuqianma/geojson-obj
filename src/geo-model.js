@@ -16,23 +16,27 @@ const Constants = {
 };
 
 export function geoModel(geojson, opt = {}) {
-  const {
+  let {
     featureTypes,
     outputType = 'extrudesurface',
     color = 0x00bbdd,
     sideColor = 0xffffff,
     depth = 1e5,
-    lineWidth = 2e4,
+    lineWidth = 1.5e4,
+    scale = 1e-3,
     minPolygonArea = 0,
     simplifyOptions,
     featureFilter,
   } = opt;
 
+  depth *= scale;
+  lineWidth *= scale;
+
   // if (simplifyOptions) {
   //   geojson = turf.simplify(geojson, simplifyOptions);
   // }
 
-  const _project = get2DProjection(geojson);
+  const _project = get2DProjection(geojson, scale);
   const project = point => {
     const projected = _project(point);
     // flip y for 3d;
