@@ -46,7 +46,7 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 const camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000000000 );
-camera.position.set( -4e5, 6e6, -2e6 );
+camera.position.set( -4e2, 6e3, -2e3 );
 
 const control = new OrbitControls( camera, renderer.domElement );
 
@@ -124,7 +124,7 @@ function disposeObject(object) {
 }
 
 let geoObject;
-let ratio = hashData.ratio || 1e3;
+let ratio = hashData && hashData.ratio || 1e3;
 
 async function generate(filepath, opt) {
   opt = {...opt, scale: 1 / ratio };
