@@ -221,6 +221,15 @@ const ModelList = [
     simplifyOptions
   },
   {
+    name: 'china plane surface',
+    file: './geojson/world-360.json',
+    featureTypes: ['Polygon', 'MultiPolygon'],
+    outputType: 'planeSurface',
+    minPolygonArea: 0.5e10,
+    featureFilter: feature => feature.properties.name === '中国',
+    simplifyOptions
+  },
+  {
     name: 'china plane outline',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
@@ -230,7 +239,7 @@ const ModelList = [
     simplifyOptions
   },
   {
-    name: 'china plane extrude surface',
+    name: 'china extrude surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
     outputType: 'extrudeSurface',
