@@ -8,10 +8,13 @@ const FeatureTypes = {
 };
 
 const Constants = {
+  // shapeType
   Outline: 'outline',
   Surface: 'surface',
 
+  // geomType
   Extrude: 'extrude',
+  Side: 'side',
   Plane: 'plane',
 };
 
@@ -53,18 +56,17 @@ export function geoModel(geojson, opt = {}) {
     ? featureTypes.reduce((obj, name) => (obj[name] = 1, obj), {})
     : FeatureTypes;
 
-  const ot = outputType.toLowerCase();
-  const shapeType = ot.includes(Constants.Outline) ? Constants.Outline : Constants.Surface;
-  const geomType = ot.includes(Constants.Plane) ? Constants.Plane : Constants.Extrude;
+  const [geomType, shapeType] = outputType.toLowerCase().split('-');
   
   const mat = new THREE.MeshBasicMaterial({ color });
-  const sideMat = new THREE.MeshBasicMaterial({ color: sideColor });
+  const sideMat = new THREE.MeshBasicMaterial({ color: sideColor, side: THREE.DoubleSide });
 
   const ringToShape = ring =>
     new THREE.Shape(ring.map(point => new THREE.Vector2(...project(point))));
 
   const polygonToSurfaceShape = polygon => polygon.slice(1).reduce((polygonShape, hole) => {
     polygonShape.holes.push(ringToShape(hole));
+    // polygonShape.curves.push(...ringToShape(hole).curves);
     return polygonShape;
   }, ringToShape(polygon[0]));
 
@@ -98,13 +100,50 @@ export function geoModel(geojson, opt = {}) {
   // outline only, no hole
   const polygonToOutlineShape = polygon => expandLineToShape(polygon[0]);
 
-  const shapesToExtrudeMesh = shape => new THREE.Mesh(
-    new THREE.ExtrudeBufferGeometry(shape, {
+  const shapesToExtrudeMesh = shapes => {
+    const geom = new THREE.ExtrudeBufferGeometry(shapes, {
       depth,
       bevelEnabled: false
-    }),
-    [mat, sideMat]
-  );
+    });
+    return new THREE.Mesh(
+      geom,
+      [mat, sideMat]
+    );
+  };
+
+  const shapesToSideMesh = shapes => {
+    const geom = new THREE.BufferGeometry();
+    const position = [];
+
+    function lineToPos({v1, v2}) {
+      position.push(v1.x, v1.y, 0);
+      position.push(v2.x, v2.y, depth);
+      position.push(v1.x, v1.y, depth);
+      
+      position.push(v1.x, v1.y, 0);
+      position.push(v2.x, v2.y, 0);
+      position.push(v2.x, v2.y, depth);
+    }
+
+    if (shapes.length) {
+      shapes.forEach(shape => {
+        if (!shape.currentPoint.equals(shape.curves[0].v1)) {
+          lineToPos({
+            v1: shape.currentPoint,
+            v2: shape.curves[0].v1
+          });
+        }
+        
+        shape.curves.forEach(lineToPos);
+        geom.setAttribute( 'position', new THREE.Float32BufferAttribute( position, 3 ) );
+      });
+    }
+
+    return new THREE.Mesh(
+      geom,
+      sideMat
+    );
+  };
 
   const shapesToPlaneMesh = shape => new THREE.Mesh(
     new THREE.ShapeBufferGeometry(shape),
@@ -112,8 +151,14 @@ export function geoModel(geojson, opt = {}) {
     // new THREE.MeshBasicMaterial({ color: '#' + (0x1000000 + (Math.random() * 0x1000000) | 0).toString(16).substr(1) }) 
   );
 
+  const shapeToMeshFns = {
+    [Constants.Extrude]: shapesToExtrudeMesh,
+    [Constants.Side]: shapesToSideMesh,
+    [Constants.Plane]: shapesToPlaneMesh
+  };
+
   const polygonToShape = shapeType === Constants.Surface ? polygonToSurfaceShape : polygonToOutlineShape;
-  const shapesToMesh = geomType === Constants.Extrude ? shapesToExtrudeMesh : shapesToPlaneMesh;
+  const shapesToMesh = shapeToMeshFns[geomType];
 
   const create = () => {
     const group = new THREE.Group();

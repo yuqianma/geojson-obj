@@ -195,7 +195,7 @@ function displayModelList(modelList) {
     const { name } = model;
     const label = form.appendChild(document.createElement('label'));
     label.textContent = name;
-    label.insertAdjacentHTML('afterbegin', `<input type="radio" name="model" value="${i}" ${hashData.model == i ? 'checked' : ''} />`);
+    label.insertAdjacentHTML('afterbegin', `<input type="radio" name="model" value="${i}" ${hashData && hashData.model == i ? 'checked' : ''} />`);
   });
 }
 
@@ -209,14 +209,14 @@ const ModelList = [
     name: 'china provinces plane surface',
     file: './geojson/china-area.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeSurface',
+    outputType: 'plane-surface',
     simplifyOptions
   },
   {
     name: 'china provinces plane outline',
     file: './geojson/china-area.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeOutline',
+    outputType: 'plane-outline',
     minPolygonArea: 0.5e10,
     simplifyOptions
   },
@@ -224,8 +224,8 @@ const ModelList = [
     name: 'china plane surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeSurface',
-    minPolygonArea: 0.5e10,
+    outputType: 'plane-surface',
+    // minPolygonArea: 0.5e10,
     featureFilter: feature => feature.properties.name === '中国',
     simplifyOptions
   },
@@ -233,50 +233,49 @@ const ModelList = [
     name: 'china plane outline',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeOutline',
+    outputType: 'plane-outline',
     minPolygonArea: 0.5e10,
     featureFilter: feature => feature.properties.name === '中国',
     simplifyOptions
   },
   {
-    name: 'china extrude surface',
+    name: 'china side surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'extrudeSurface',
-    minPolygonArea: 0.5e10,
+    outputType: 'side-surface',
     featureFilter: feature => feature.properties.name === '中国'
   },
   {
-    name: 'china ten-dash line extrude surface',
+    name: 'china ten-dash line side surface',
     file: './geojson/china-area.json',
     featureTypes: ['MultiLineString'],
-    outputType: 'extrudeSurface'
+    outputType: 'side-surface'
   },
   {
     name: 'china ten-dash line plane surface',
     file: './geojson/china-area.json',
     featureTypes: ['MultiLineString'],
-    outputType: 'planeSurface'
+    outputType: 'plane-surface'
   },
   {
-    name: 'world extrude surface',
+    name: 'world side surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'extrudeSurface',
+    outputType: 'side-surface',
     simplifyOptions
   },
   {
     name: 'world plane surface',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeSurface',
+    outputType: 'plane-surface',
     simplifyOptions
   },
   {
     name: 'world contries plane outline',
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
-    outputType: 'planeOutline',
+    outputType: 'plane-outline',
     minPolygonArea: 1e10,
     simplifyOptions
   }

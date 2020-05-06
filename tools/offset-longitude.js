@@ -30,14 +30,24 @@ turf.featureEach(originGeojson, (currentFeature, featureIndex) => {
 
   if (currentFeature.properties.name) {
     const name = currentFeature.properties.name;
-    console.log(name);
     const type = turf.getType(currentFeature);
     if (type === 'MultiPolygon') {
       if (name === '中国') {
-        currentFeature.geometry.coordinates = 
-        currentFeature.geometry.coordinates.filter(polygon => {
+        const coordinates = [];
+
+        currentFeature.geometry.coordinates
+        .filter(polygon => {
           return polygon.length !== 10;
+        })
+        .forEach((polygon, i) => {
+          if (polygon.length > 1) {
+            console.log('flat china polygon #', i);
+            polygon.forEach(ring => coordinates.push([ring]));
+          } else {
+            coordinates.push(polygon);
+          }
         });
+        currentFeature.geometry.coordinates = coordinates;
       }
       currentFeature.geometry.coordinates.forEach(mutatePolygon);
     } else if (type === 'Polygon') {
