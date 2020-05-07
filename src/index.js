@@ -132,6 +132,7 @@ async function generate(filepath, opt) {
 
   const model = geoModel(geojson, opt);
   const object = model.create();
+  object.name = opt.name;
 
   geoObject = object;
 
@@ -152,20 +153,24 @@ async function generate(filepath, opt) {
   geoGroup.add(circle);
 };
 
-function viewModel(id) {
+async function viewModel(id) {
   if (id > -1) {
     const modelOpt = ModelList[id];
     const { file } = modelOpt;
 
     disposeObject(geoGroup);
 
-    generate(file, modelOpt);
+    await generate(file, modelOpt);
   }
+}
+
+function getFileName(name) {
+  return name.toLowerCase().split(' ').join('.') + `1-${ratio/1000}km.obj`;
 }
 
 document.querySelector('#download').addEventListener('click', (e) => {
   const { name } = ModelList[hashData.model];
-  const filename = name.toLowerCase().split(' ').join('.') + `1-${ratio/1000}km.obj`;
+  const filename = getFileName(name);
   console.log('downloading', filename);
   downloadObj(filename, geoObject);
 });
@@ -198,6 +203,24 @@ function displayModelList(modelList) {
     label.insertAdjacentHTML('afterbegin', `<input type="radio" name="model" value="${i}" ${hashData && hashData.model == i ? 'checked' : ''} />`);
   });
 }
+
+async function downloadMulti() {
+  const start = 1;
+  const end = ModelList.length;
+  for (let i = start; i < end; ++i) {
+    const { name } = ModelList[i];
+    const filename = getFileName(name);
+    if (i !== start) {
+      alert(`next (${i - start + 1}/${end - start}): ${filename}`);
+    }
+    await viewModel(i);
+
+    
+    console.log('downloading', filename);
+    downloadObj(filename, geoObject);
+  }
+}
+window.downloadMulti = downloadMulti;
 
 const simplifyOptions = {
   tolerance: 0.1,
@@ -243,7 +266,8 @@ const ModelList = [
     file: './geojson/world-360.json',
     featureTypes: ['Polygon', 'MultiPolygon'],
     outputType: 'side-surface',
-    featureFilter: feature => feature.properties.name === '中国'
+    featureFilter: feature => feature.properties.name === '中国',
+    simplifyOptions
   },
   {
     name: 'china ten-dash line side surface',
