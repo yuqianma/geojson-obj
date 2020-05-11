@@ -18,6 +18,26 @@ const Constants = {
   Plane: 'plane',
 };
 
+const getDebugGeojson = () => {
+  const getTri = ([ax, ay, bx, by]) => ([
+    [ ax, ay ],
+    [ bx, ay ],
+    // [ bx, by ],
+    [ ax, by ],
+    [ ax, ay ]
+  ]);
+  const j = turf.multiPolygon([ [[ 
+    [-180, 80],
+    [-160, 80],
+    [-160, -60],
+    [180, -60],
+    [180, -80],
+    [-180, -80]
+  ]] ]);
+  // j.properties.bbox = [73.502355, 16, 135.09567, 43.563269];
+  return j;
+};
+
 export function geoModel(geojson, opt = {}) {
   let {
     featureTypes,
@@ -31,6 +51,10 @@ export function geoModel(geojson, opt = {}) {
     simplifyOptions,
     featureFilter,
   } = opt;
+
+  // debug
+  // geojson = getDebugGeojson();
+  // depth = 1e6;
 
   depth *= scale;
   lineWidth *= scale;
@@ -59,7 +83,7 @@ export function geoModel(geojson, opt = {}) {
   const [geomType, shapeType] = outputType.toLowerCase().split('-');
   
   const mat = new THREE.MeshBasicMaterial({ color });
-  const sideMat = new THREE.MeshBasicMaterial({ color: sideColor, side: THREE.DoubleSide });
+  const sideMat = new THREE.MeshBasicMaterial({ color: sideColor });
 
   const ringToShape = ring =>
     new THREE.Shape(ring.map(point => new THREE.Vector2(...project(point))));
@@ -135,8 +159,8 @@ export function geoModel(geojson, opt = {}) {
         }
         
         shape.curves.forEach(lineToPos);
-        geom.setAttribute( 'position', new THREE.Float32BufferAttribute( position, 3 ) );
       });
+      geom.setAttribute( 'position', new THREE.Float32BufferAttribute( position, 3 ) );
     }
 
     return new THREE.Mesh(
@@ -166,7 +190,7 @@ export function geoModel(geojson, opt = {}) {
     turf.featureEach(geojson, (feature) => {
       if (featureFilter && !featureFilter(feature)) {
         return;
-      } 
+      }
       const type = turf.getType(feature);
       const name = feature.properties.name;
 
@@ -174,13 +198,13 @@ export function geoModel(geojson, opt = {}) {
         return;
       }
 
-      // if (name && simplifyOptions) {
-      //   try {
-      //     feature = turf.simplify(feature, simplifyOptions);
-      //   } catch (e) {
-      //     console.error(name, e, feature);
-      //   }
-      // }
+      if (name && simplifyOptions) {
+        try {
+          feature = turf.simplify(feature, simplifyOptions);
+        } catch (e) {
+          console.error(name, e, feature);
+        }
+      }
 
       let coordinates = feature.geometry.coordinates;
 
@@ -203,11 +227,11 @@ export function geoModel(geojson, opt = {}) {
         }
 
         coordinates.forEach((polygon, i) => {
-          try {
-            turf.simplify(turf.polygon(polygon), simplifyOptions);
-          } catch (e) {
-            console.log(name, i, e, polygon, feature);
-          }
+          // try {
+          //   turf.simplify(turf.polygon(polygon), simplifyOptions);
+          // } catch (e) {
+          //   console.log(name, i, e, polygon, feature);
+          // }
           if (minPolygonArea) {
             let area;
             try {
@@ -219,6 +243,10 @@ export function geoModel(geojson, opt = {}) {
             if (!area || area < minPolygonArea) {
               return;
             }
+          }
+
+          if (turf.booleanClockwise(polygon[0])) {
+            polygon[0].reverse();
           }
 
           const shape = polygonToShape(polygon);
