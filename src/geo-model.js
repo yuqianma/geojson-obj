@@ -198,14 +198,6 @@ export function geoModel(geojson, opt = {}) {
         return;
       }
 
-      if (name && simplifyOptions) {
-        try {
-          feature = turf.simplify(feature, simplifyOptions);
-        } catch (e) {
-          console.error(name, e, feature);
-        }
-      }
-
       let coordinates = feature.geometry.coordinates;
 
       const shapes = [];
