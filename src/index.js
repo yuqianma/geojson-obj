@@ -123,8 +123,31 @@ function disposeObject(object) {
   }
 }
 
+function getProvinceCenters(chinaGeojson) {
+  const centerMap = {};
+  turf.featureEach(chinaGeojson, (f) => {
+    const { name, center } = f.properties;
+    if (center) {
+      centerMap[name] = turf.center(f).geometry.coordinates.map(n => +n.toFixed(2));
+    }
+  });
+  console.log(JSON.stringify(centerMap));
+  return centerMap;
+}
+
 let geoObject;
 let ratio = hashData && hashData.ratio || 1e3;
+
+function getIndicator(model, [lon, lat]) {
+  const [x, y] = model.project([lon, lat]);
+  var geometry = new THREE.SphereBufferGeometry( x / 200, 32, 32 );
+  var material = new THREE.MeshBasicMaterial( { color: 0xee5555 } );
+  var mesh = new THREE.Mesh( geometry, material );
+  geometry.translate(x, y, 1);
+  mesh.rotateX(Math.PI / 2);
+  mesh.rotateY(Math.PI);
+  return mesh;
+}
 
 async function generate(filepath, opt) {
   opt = {...opt, scale: 1 / ratio };
@@ -143,14 +166,14 @@ async function generate(filepath, opt) {
   const helper = new THREE.BoxHelper( object, 0xffff00 );
   geoGroup.add( helper );
 
+
+  // const centerMap = getProvinceCenters(geojson);
+  // Object.entries(centerMap).forEach(([k, v]) => {
+  //   geoGroup.add(getIndicator(model, v));
+  // });
+
   // indicate [180, 0]
-  const [x, y] = model.project([180, 0]);
-  var geometry = new THREE.SphereBufferGeometry( x / 100, 32, 32 );
-  var material = new THREE.MeshBasicMaterial( { color: 0xee5555 } );
-  var circle = new THREE.Mesh( geometry, material );
-  geometry.translate(x, y, 1);
-  circle.rotateY(Math.PI);
-  geoGroup.add(circle);
+  geoGroup.add(getIndicator(model, [180, 30]));
 };
 
 async function viewModel(id) {
