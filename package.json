@@ -24,7 +24,7 @@
   "dependencies": {
     "@turf/turf": "^5.1.6",
     "d3-geo": "^1.11.9",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "polyline-normals": "^2.0.2",
     "three": "^0.115.0"
   },
